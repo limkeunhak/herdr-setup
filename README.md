@@ -19,7 +19,8 @@ macOS와 Windows(WSL2) 설치 방법이 따로 있습니다.
 | `herdr-app/` | 레이아웃, 모드, 추가할 단축키(`keys-add.json`), Spaces 패널 수정 내용 |
 | `install-mac.sh` | macOS: 위 파일을 Herdr에 넣고 글꼴·단축키 설정 |
 | `install-windows.ps1` | Windows: 같은 일 + 보드가 WSL을 보도록 설정 |
-| `setup-wsl.sh` | Windows의 WSL 안에 tmux·Node 22·Claude Code·OpenRig 설치 |
+| `setup-wsl.sh` | Windows의 WSL 안에 tmux·Node 22·Claude Code·OpenRig 설치, Herdr가 찾도록 `/usr/local/bin`에 링크 |
+| `docs/` | 실제 환경에서 점검한 결과 |
 
 두 설치 스크립트 모두 바꾸는 파일을 Herdr 설정 폴더의 `backup-before-herdr-board-<시각>`에 먼저 백업하고,
 이미 다른 기능에 쓰이는 단축키는 덮어쓰지 않고 경고만 합니다.
@@ -70,7 +71,14 @@ Herdr는 WSL을 `wsl`이라는 다른 컴퓨터로 연결해서 그 안에 공�
 OpenRig는 macOS나 Linux와 tmux가 필요해서 어차피 WSL 안에서 돌아야 합니다.
 직접 띄우는 에이전트도 같은 곳에 두면 같은 도구, 같은 저장소, 같은 `~/.claude` 기록을 써서 보드의 상태와 토큰 표시가 맞습니다.
 
-> Windows에서는 아직 직접 시험해 보지 못했습니다. 막히는 단계가 있으면 그 화면 내용을 알려 주세요.
+> 2026-11-26 Windows 11 + WSL2 Ubuntu(herdr-core 0.1.22, Claude Code 2.1.332, OpenRig 0.7.23)에서 시험했습니다.
+> 보드 표시, 하위 에이전트 연결, Needs you 전환이 동작합니다. 점검 내용은 [`docs/check-2026-11-26.md`](docs/check-2026-11-26.md)에 있습니다.
+
+> **이미 설치했다면:** 2026-11-26 이전 `setup-wsl.sh`로 설치한 경우, 보드의 OpenRig 팀 목록이 비어 있거나 `hc run claude`가 `cannot start "claude"`로 실패합니다.
+> WSL에서 아래를 한 번 실행하세요. Herdr 서버 PATH에 원래 `/usr/local/bin`이 있어서 재시작 없이 바로 적용됩니다.
+> ```bash
+> for b in claude rig hc herdr-core; do sudo ln -sfn "$HOME/.local/bin/$b" /usr/local/bin/$b; done
+> ```
 
 ### 1. WSL 준비 (WSL Ubuntu 터미널)
 ```bash
@@ -116,6 +124,14 @@ Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누
 ---
 
 ## 알아 둘 점
+- **WSL에서 Herdr가 프로그램을 못 찾을 때:** Herdr의 WSL 쪽 서버(herdr-core)는 systemd 사용자 서비스로 돌아서 `~/.profile`을 읽지 않습니다. 그래서 `~/.local/bin`에 있는 `claude`·`rig`·`hc`를 이름만으로는 못 찾습니다. `setup-wsl.sh`가 `/usr/local/bin`에 링크를 만들어 이 문제를 막습니다. 다른 도구를 `~/.local/bin`에 더 설치했다면 같은 방법으로 링크하거나 전체 경로로 실행하세요.
+- **하위 에이전트가 보드에 뜨는 조건:** 보드는 Herdr 터미널 단위로 카드를 만듭니다. Claude Code 안에서 Agent(Task) 도구로 띄운 서브에이전트는 같은 프로세스 안에서 돌기 때문에 보드에 나오지 않습니다. 보드에 카드로 띄우려면 에이전트 안에서 터미널로 실행하세요.
+  ```bash
+  hc run --bg --name chk-api claude --permission-mode auto "할 일 설명"
+  ```
+  부모 카드 밑에 "from wsl/t2"처럼 붙어서 나옵니다. 처음 여는 폴더면 신뢰 확인 창 때문에 **Needs you** 칸에 먼저 뜨니, 보드에서 카드를 열어 승인하면 됩니다.
+- **부모 에이전트에 자동 입력되는 알림:** `hc run`으로 띄운 자식이 멈추거나 끝나면 hc가 부모 에이전트 입력창에 `<hc>t16 is blocked (permission)…` 같은 줄을 입력합니다. 원하지 않으면 `hc run --no-notify`로 띄우거나 `~/.config/herdr-core/config.toml`에 `notes = false`를 넣으세요.
+- **`hc read`는 기본으로 화면만** 보여 줍니다. 지난 출력까지 보려면 `hc read <t> --lines 1000`처럼 줄 수를 주세요.
 - **OpenRig 팀원 상태:** Herdr는 tmux 안 Claude Code가 보내는 신호로 상태를 판단합니다. 그래서 창 크기가 바뀔 때 팀원이 잠깐 working→done으로 깜빡입니다. 보드 카드는 OpenRig 상태를 쓰므로 영향이 없지만, 사이드바의 Done 표시와 "finished" 알림은 그대로 뜰 수 있습니다.
 - **OpenRig 레이아웃과 글꼴:** OpenRig의 `rig terminal open`이 만드는 `rig` 레이아웃에는 글꼴 설정이 없을 수 있습니다. 한글 자간이 벌어지면 그 레이아웃 파일 맨 위에 `"font": "D2Coding"`을 넣으세요.
 - **되돌리기:** Herdr에서 `Ctrl+Shift+L`로 다른 레이아웃을 고르면 됩니다. 설치 전 상태는 백업 폴더에 있습니다.
