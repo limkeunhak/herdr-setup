@@ -43,6 +43,6 @@ cat <<'EOF'
 
 Done in WSL. Next (see README.md):
   1. claude            # sign in once, then /exit
-  2. put the ticketing project in WSL (e.g. ~/Projects/ticketing), not under /mnt/c
-  3. cd ~/Projects/ticketing && rig up rigs/tkt/rig.yaml
+  2. on Windows: install Herdr, D2Coding, connect WSL as machine "wsl", run install-windows.ps1
+  3. keep projects in WSL (e.g. ~/Projects/<project>), not under /mnt/c; start teams with rig start / rig up
 EOF
