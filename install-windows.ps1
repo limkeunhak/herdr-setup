@@ -55,6 +55,12 @@ foreach ($m in @("herdr-board", "tab-notes", "tmux-prefix")) {
 }
 Write-Host "Copied layout herdr-board and mods herdr-board, tab-notes, tmux-prefix"
 
+# On Windows, OpenRig and the agents run in WSL (Herdr machine "wsl"): point the board there.
+$cfg = Join-Path $HerdrHome "mods\herdr-board\config.js"
+$cfgText = [IO.File]::ReadAllText($cfg).Replace('export const MACHINE = null;', 'export const MACHINE = "wsl";')
+[IO.File]::WriteAllText($cfg, $cfgText, (New-Object Text.UTF8Encoding($false)))
+Write-Host 'herdr-board/config.js: MACHINE = "wsl"'
+
 # my-spaces: this Herdr's own `spaces` mod, cloned here, plus the OpenRig badge and button
 # (my-spaces.patch.json). Herdr's code isn't shipped in this repo. Needs Herdr open.
 $mySpaces = Join-Path $HerdrHome "mods\my-spaces"
