@@ -18,7 +18,8 @@ macOS와 Windows(WSL2) 설치 방법이 따로 있습니다.
 |---|---|
 | `herdr-app/` | 레이아웃, 모드, 추가할 단축키(`keys-add.json`, macOS 전용 `keys-add-mac.json`), Spaces 패널 수정 내용 |
 | `install-mac.sh` | macOS: 위 파일을 Herdr에 넣고 글꼴·단축키 설정 |
-| `install-windows.ps1` | Windows: 같은 일 + 보드가 WSL을 보도록 설정 |
+| `install-windows.ps1` | Windows: 같은 일 + 보드가 WSL을 보도록 설정, PowerShell용 `rig` 래퍼 설치 |
+| `windows/` | PowerShell·cmd에서 WSL 안의 `rig`·`openrig-tui`를 실행하는 `.cmd` 래퍼 |
 | `setup-wsl.sh` | Windows의 WSL 안에 tmux·Node 22·Claude Code·OpenRig 설치, Herdr가 찾도록 `/usr/local/bin`에 링크 |
 | `docs/` | 실제 환경에서 점검한 결과 |
 
@@ -115,6 +116,17 @@ cd ~/Projects/<프로젝트> && rig up <팀 설정>.yaml
 ```
 Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누르면 WSL 안에 그 팀 공간이 생깁니다.
 직접 쓸 Claude Code는 Spaces의 `wsl` 쪽 `+`로 공간을 만들어 그 안에서 `claude`를 실행하세요.
+`wsl` 쪽 `+`도 폴더 선택 창을 띄우고, 고른 폴더를 WSL 경로로 바꿔 그곳에 공간을 만듭니다
+(`\\wsl.localhost\Ubuntu\home\<나>\proj` → `/home/<나>/proj`, `C:\work` → `/mnt/c/work`).
+선택 창 왼쪽 즐겨찾기(Quick Access)에 설치 스크립트가 고정해 둔 WSL 홈이 있습니다.
+
+PowerShell이나 cmd에서도 `rig`, `openrig-tui`를 바로 쓸 수 있습니다. 설치 스크립트가 `%USERPROFILE%\.local\bin`에
+WSL 안의 명령을 대신 실행하는 `rig.cmd`·`openrig-tui.cmd`를 넣습니다. 인자와 현재 폴더(`C:\x` → `/mnt/c/x`)는 그대로 넘어가지만,
+인자로 쓴 Windows 경로는 바뀌지 않으니 `/mnt/c/...`나 `.`을 쓰세요.
+```powershell
+rig ps
+rig doctor
+```
 
 ### Mac과 다른 점
 - Mac 전용 `cmd-…` 단축키는 옮기지 않습니다. Windows Herdr 기본 단축키에 Ctrl+B 두 줄만 더합니다. 오른쪽 Files 패널은 단축키 대신 터미널 위 `Hide Files` 버튼으로 숨깁니다.
@@ -134,7 +146,7 @@ Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누
 - **`hc read`는 기본으로 화면만** 보여 줍니다. 지난 출력까지 보려면 `hc read <t> --lines 1000`처럼 줄 수를 주세요.
 - **OpenRig 팀원 상태:** Herdr는 tmux 안 Claude Code가 보내는 신호로 상태를 판단합니다. 그래서 창 크기가 바뀔 때 팀원이 잠깐 working→done으로 깜빡입니다. 보드 카드는 OpenRig 상태를 쓰므로 영향이 없지만, 사이드바의 Done 표시와 "finished" 알림은 그대로 뜰 수 있습니다.
 - **한글 자간:** Herdr가 시스템에 설치된 D2Coding `.ttc`를 시작할 때 못 읽으면 다른 글꼴로 바뀌어 한글 자간이 벌어집니다. `install-mac.sh`는 그래서 D2Coding `.ttf` 두 개를 Herdr 설정 폴더의 `fonts/`에도 복사합니다(Herdr가 시작할 때마다 읽는 곳). Windows에서 같은 증상이 나오면 릴리스 zip의 `D2Coding/` 안 `.ttf` 두 개를 Herdr 설정 폴더(보통 `%USERPROFILE%\.config\herdr-app`)의 `fonts\`에 넣으세요.
-- **Spaces `+`와 WSL:** Windows에서는 폴더 선택 창이 Windows 것이라 `+`로 만든 공간이 WSL이 아니라 Windows에 생깁니다. WSL 안에 만들려면 컴퓨터 목록의 `wsl` 옆 버튼을 쓰세요.
+- **Spaces `+`와 WSL:** Spaces 제목 옆 `+`는 공간을 Windows(이 컴퓨터)에 만듭니다. WSL 안에 만들려면 컴퓨터 목록의 `wsl` 옆 `+`를 쓰세요. 둘 다 Windows 폴더 선택 창을 쓰는데, 이 창은 시작 폴더를 정할 수 없어서 WSL 홈을 즐겨찾기에 고정해 둡니다. WSL 다른 배포판이나 네트워크 폴더를 고르면 공간을 만들지 않고 알림만 띄웁니다.
 - **OpenRig 레이아웃과 글꼴:** OpenRig의 `rig terminal open`이 만드는 `rig` 레이아웃에는 글꼴 설정이 없을 수 있습니다. 한글 자간이 벌어지면 그 레이아웃 파일 맨 위에 `"font": "D2Coding"`을 넣으세요.
 - **되돌리기:** Herdr에서 `Ctrl+Shift+L`로 다른 레이아웃을 고르면 됩니다. 설치 전 상태는 백업 폴더에 있습니다.
 

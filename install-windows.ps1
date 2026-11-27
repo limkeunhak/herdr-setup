@@ -122,7 +122,38 @@ if ($herdrFonts.Count -gt 0) { Write-Host "D2Coding: found in $(Join-Path $Herdr
 elseif ($fonts -match "D2Coding") { Write-Host "D2Coding: installed in Windows" }
 else { Write-Warning "D2Coding font not found: get it from https://github.com/naver/d2codingfont/releases and install it, or put its two .ttf files (D2Coding/ in the zip) into $(Join-Path $HerdrHome 'fonts')." }
 
-# 7. Check the mods and show the layout.
+# 7. `rig` and `openrig-tui` in PowerShell and cmd: small .cmd wrappers that run them inside WSL
+#    (OpenRig doesn't run on Windows itself). A .cmd needs no change to PowerShell's execution policy.
+$bin = Join-Path $env:USERPROFILE ".local\bin"
+New-Item -ItemType Directory -Force -Path $bin | Out-Null
+foreach ($w in @("rig.cmd", "openrig-tui.cmd")) {
+  $dst = Join-Path $bin $w
+  if (Test-Path $dst) { Copy-Item $dst (Join-Path $backup "bin_$w") }
+  Copy-Item (Join-Path $here "windows\$w") $dst -Force
+}
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if (-not (($userPath -split ';') -contains $bin)) {
+  [Environment]::SetEnvironmentVariable("Path", (@($userPath, $bin) | Where-Object { $_ }) -join ';', "User")
+  Write-Host "Added $bin to your PATH (open a new PowerShell window to use rig)."
+}
+Write-Host "rig, openrig-tui: $bin (they run in WSL Ubuntu)"
+
+# The folder picker behind Spaces' + is Windows' own and can't be told where to start:
+# pin the WSL home to Quick Access so it is one click away in that picker.
+try {
+  $wslHome = (& wsl.exe -d Ubuntu -e sh -c 'printf %s "$HOME"' 2>$null)
+  if ($wslHome -like "/*") {
+    $unc = "\\wsl.localhost\Ubuntu" + ($wslHome -replace '/', '\')
+    $shell = New-Object -ComObject Shell.Application
+    $pinned = @($shell.Namespace('shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}').Items() | ForEach-Object { $_.Path })
+    if ($pinned -notcontains $unc) { $shell.Namespace($unc).Self.InvokeVerb("pintohome") }
+    Write-Host "Quick Access: $unc"
+  }
+} catch {
+  Write-Host "Couldn't pin the WSL home to Quick Access; type \\wsl.localhost\Ubuntu\home\<you> in the picker instead."
+}
+
+# 8. Check the mods and show the layout.
 try {
   foreach ($m in @("herdr-board", "my-spaces", "tab-notes", "tmux-prefix")) { & herdr-app check (Join-Path $HerdrHome "mods\$m") }
   & herdr-app do layout.switch --name herdr-board | Out-Null
