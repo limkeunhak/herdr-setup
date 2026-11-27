@@ -7,7 +7,8 @@
 # Copies layout herdr-board and mods herdr-board, tab-notes, tmux-prefix; makes my-spaces from
 # this Herdr's own `spaces` mod plus my-spaces.patch.json; sets the terminal font to D2Coding and
 # copies its .ttf files into Herdr's fonts/ folder;
-# adds the two Ctrl+B keys (never replacing a key already bound to something else).
+# adds the two Ctrl+B keys and, on macOS, Cmd+Shift+B for the Files panel (never replacing a key
+# already bound to something else).
 # Everything it replaces is backed up first. Start Herdr once before this, so its home exists.
 set -euo pipefail
 
@@ -100,7 +101,10 @@ if not os.path.exists(kp):
     print("WARNING keys.json not found: start Herdr once, then run this again for the Ctrl+B keys")
 else:
     keys = load(kp, {})
-    for section, binds in load(os.path.join(src, "keys-add.json"), {}).items():
+    add = load(os.path.join(src, "keys-add.json"), {})
+    for section, binds in load(os.path.join(src, "keys-add-mac.json"), {}).items():
+        add.setdefault(section, {}).update(binds)
+    for section, binds in add.items():
         target = keys.setdefault(section, {})
         for k, v in binds.items():
             if k in target and target[k] != v:

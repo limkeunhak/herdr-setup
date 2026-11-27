@@ -645,7 +645,18 @@ export default class Board extends View {
       return h_flex().size_full().px(16).items_center().gap(8).bg(C.white)
         .child(dot(C.violet)).child(div().text_size(12).font_semibold().text_color(C.ink).child("Live workspace"))
         .child(div().text_size(11).text_color(C.muted).child(`${active?.name ?? ""} / ${tab?.name ?? ""}`))
-        .child(div().flex_1()).child(div().text_size(10).text_color(C.muted).child("TERMINALS"));
+        .child(div().flex_1())
+        // Shows or hides the right Files panel (layout node "side-panel"); also cmd-shift-b.
+        .child((() => {
+          const side = find(layout(), "side-panel");
+          if (!side) return div().text_size(10).text_color(C.muted).child("TERMINALS");
+          const shown = !side.hidden;
+          return chip(shown ? "Hide Files" : "Files", shown).id("chip-side-panel").cursor_pointer()
+            .hover(s => s.border_color(C.violet + "88"))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .tooltip("Show or hide the Files panel (⌘⇧B)")
+            .on_click(() => run("layout.toggle", { id: "side-panel" }));
+        })());
     }
     if (role === "pane") {
       const p = panes().find(p => p.pane === props()?.pane);

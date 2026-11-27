@@ -203,16 +203,16 @@
                       "min": 240
                     },
                     {
-                      "id": "tab-notes",
+                      "id": "side-panel",
                       "type": "block",
+                      "content": {
+                        "mod": "files"
+                      },
                       "size": {
                         "px": 340
                       },
                       "min": 240,
-                      "max": 700,
-                      "content": {
-                        "mod": "tab-notes"
-                      }
+                      "max": 700
                     }
                   ]
                 }

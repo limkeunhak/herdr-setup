@@ -1,0 +1,3 @@
+{
+  "layout:herdr-board": { "cmd-shift-b": "layout.toggle:side-panel" }
+}

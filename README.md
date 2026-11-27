@@ -1,7 +1,7 @@
 # herdr-setup
 
 [Herdr](https://herdr.dev) 앱에서 코딩 에이전트를 한눈에 보는 설정입니다.
-에이전트 보드, 탭별 메모, tmux식 Ctrl+B 단축키, D2Coding 글꼴, [OpenRig](https://www.openrig.dev) 팀 연동이 들어 있습니다.
+에이전트 보드, 파일 목록 패널, tmux식 Ctrl+B 단축키, D2Coding 글꼴, [OpenRig](https://www.openrig.dev) 팀 연동이 들어 있습니다.
 macOS와 Windows(WSL2) 설치 방법이 따로 있습니다.
 
 ## 무엇이 들어 있나
@@ -10,13 +10,13 @@ macOS와 Windows(WSL2) 설치 방법이 따로 있습니다.
 |---|---|
 | 에이전트 보드 (`herdr-board`) | Needs you / Working / Done / Idle 네 칸에 에이전트를 카드로 보여 줍니다. 하위 에이전트는 부모 카드 밑에 붙고, 카드마다 실제 작업 시간과 Claude Code 토큰 수가 나옵니다. 필터(이 공간만, 핀 고정만), 핀, 숨기기, 종료, 이름 바꾸기, OpenRig 팀원 상태와 팀 추가 창이 있습니다 |
 | Spaces 패널 (`my-spaces`) | Herdr 기본 Spaces 패널에 OpenRig 팀 공간 "rig" 표시와 "Add an OpenRig team" 버튼을 더합니다. Spaces 제목 옆 `+`를 누르면 폴더 선택 창이 떠서, 고른 폴더를 작업 디렉토리로 새 공간을 만듭니다(취소하면 아무것도 안 생김). 설치할 때 그 컴퓨터의 Herdr에서 복제해 `my-spaces.patch.json`을 적용합니다(Herdr 코드는 이 저장소에 없음) |
-| 탭 메모 (`tab-notes`) | 탭마다 따로 쓰는 마크다운 메모 패널. 탭을 닫으면 그 메모도 지워집니다 |
+| 탭 메모 (`tab-notes`) | 탭마다 따로 쓰는 마크다운 메모 패널. 탭을 닫으면 그 메모도 지워집니다. 설치는 되지만 `herdr-board` 레이아웃에는 넣지 않았습니다 |
 | Ctrl+B 단축키 (`tmux-prefix`) | `Ctrl+B` 다음 `v` 오른쪽 나누기, `s` 아래 나누기, `h j k l` 창 이동, `c` 새 탭, `?` 전체 목록 |
-| 레이아웃 (`herdr-board`) | 왼쪽 사이드바, 위 보드(경계선을 끌어 높이 조절), 아래 터미널, 오른쪽 메모 |
+| 레이아웃 (`herdr-board`) | 왼쪽 사이드바, 위 보드(경계선을 끌어 높이 조절), 아래 터미널, 오른쪽 파일 목록(Files). 파일 목록은 지금 쓰는 터미널의 폴더를 보여 주고, 터미널 위 `Hide Files` 버튼이나 macOS의 `⌘⇧B`로 숨기고 다시 보입니다 |
 
 | 파일 | 용도 |
 |---|---|
-| `herdr-app/` | 레이아웃, 모드, 추가할 단축키(`keys-add.json`), Spaces 패널 수정 내용 |
+| `herdr-app/` | 레이아웃, 모드, 추가할 단축키(`keys-add.json`, macOS 전용 `keys-add-mac.json`), Spaces 패널 수정 내용 |
 | `install-mac.sh` | macOS: 위 파일을 Herdr에 넣고 글꼴·단축키 설정 |
 | `install-windows.ps1` | Windows: 같은 일 + 보드가 WSL을 보도록 설정 |
 | `setup-wsl.sh` | Windows의 WSL 안에 tmux·Node 22·Claude Code·OpenRig 설치, Herdr가 찾도록 `/usr/local/bin`에 링크 |
@@ -117,7 +117,7 @@ Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누
 직접 쓸 Claude Code는 Spaces의 `wsl` 쪽 `+`로 공간을 만들어 그 안에서 `claude`를 실행하세요.
 
 ### Mac과 다른 점
-- Mac 전용 `cmd-…` 단축키는 옮기지 않습니다. Windows Herdr 기본 단축키에 Ctrl+B 두 줄만 더합니다.
+- Mac 전용 `cmd-…` 단축키는 옮기지 않습니다. Windows Herdr 기본 단축키에 Ctrl+B 두 줄만 더합니다. 오른쪽 Files 패널은 단축키 대신 터미널 위 `Hide Files` 버튼으로 숨깁니다.
 - 제목 표시줄이 없는 레이아웃이라, 창 최소화·최대화·닫기 버튼은 보드 맨 위 오른쪽에 나옵니다.
 - 보드는 `rig`과 토큰 계산(`python3`)을 `wsl` 쪽에서 실행합니다. 실패하면 토큰과 팀 목록만 비고 나머지는 동작합니다.
 
