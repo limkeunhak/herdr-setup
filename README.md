@@ -61,7 +61,7 @@ bash install-mac.sh
 rig start                                # 데몬과 OpenRig 기본 팀(kernel) 시작, 전에 돌던 팀도 복원
 cd <프로젝트> && rig up <팀 설정>.yaml    # 새 팀 시작
 ```
-Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누르면 팀원 화면이 공간으로 생깁니다.
+Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누르면 팀원 화면이 공간으로 생깁니다(4명이면 2×2로 나뉨). 꺼진 팀은 버튼이 **Start & add**로 나오며, `rig up <팀> --existing`으로 대화를 이어서 켠 뒤 붙입니다. 대화를 이어 갈 수 없는 자리(agy 등)는 새로 시작합니다. 일부 자리만 켜지면 켜진 자리만 붙이고 빠진 자리를 주황색으로 알려 줍니다.
 
 ---
 
@@ -114,7 +114,7 @@ Mac 설치와 같은 일을 하고, 보드가 WSL에서 `rig`과 토큰 계산�
 rig start
 cd ~/Projects/<프로젝트> && rig up <팀 설정>.yaml
 ```
-Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누르면 WSL 안에 그 팀 공간이 생깁니다.
+Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누르면 WSL 안에 그 팀 공간이 생깁니다(4명이면 2×2로 나뉨). 꺼진 팀은 버튼이 **Start & add**로 나오며, `rig up <팀> --existing`으로 대화를 이어서 켠 뒤 붙입니다. 대화를 이어 갈 수 없는 자리(agy 등)는 새로 시작합니다. 일부 자리만 켜지면 켜진 자리만 붙이고 빠진 자리를 주황색으로 알려 줍니다.
 직접 쓸 Claude Code는 Spaces의 `wsl` 쪽 `+`로 공간을 만들어 그 안에서 `claude`를 실행하세요.
 `wsl` 쪽 `+`도 폴더 선택 창을 띄우고, 고른 폴더를 WSL 경로로 바꿔 그곳에 공간을 만듭니다
 (`\\wsl.localhost\Ubuntu\home\<나>\proj` → `/home/<나>/proj`, `C:\work` → `/mnt/c/work`).

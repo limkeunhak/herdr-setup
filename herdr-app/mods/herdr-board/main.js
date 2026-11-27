@@ -493,8 +493,8 @@ export default class Board extends View {
   // Add a rig as a Herdr space: one terminal per seat, each attached to the seat's tmux
   // session (as OpenRig's own Herdr spaces are), laid out two by two. Closing that space
   // later only closes the views; the seats keep running in OpenRig.
-  addRig(name, cx) {
-    this.opening[name] = "opening";
+  addRig(name, cx, running = true) {
+    this.opening[name] = running ? "opening" : "starting";
     cx.notify();
     // Waits (up to ~10s) for the live data to show what a command made.
     const until = async (cx, find) => {
@@ -503,10 +503,27 @@ export default class Board extends View {
     };
     cx.spawn(async (cx) => {
       try {
-        const r = await exec("rig", ["ps", "--nodes", "--rig", name, "--json", "--fields", "logicalId,canonicalSessionName,tmuxAttachCommand"], { timeout: 20000, ...ON });
-        if (r.code !== 0) throw new Error((r.stderr || r.stdout).trim().split("\n").pop());
-        const seats = JSON.parse(r.stdout).entries ?? [];
-        if (!seats.length) throw new Error("no seats");
+        const nodes = async () => {
+          const r = await exec("rig", ["ps", "--nodes", "--rig", name, "--json", "--fields", "logicalId,canonicalSessionName,tmuxAttachCommand,sessionStatus,resumeCommand"], { timeout: 20000, ...ON });
+          if (r.code !== 0) throw new Error((r.stderr || r.stdout).trim().split("\n").pop());
+          return JSON.parse(r.stdout).entries ?? [];
+        };
+        // A stopped team has no tmux sessions to attach to: bring it back first, with its conversations.
+        // Seats with nothing to resume (no resumeCommand, e.g. agy) are started fresh instead.
+        let upError = "";
+        if (!running) {
+          const fresh = (await nodes()).filter(s => s.sessionStatus !== "running" && !s.resumeCommand).map(s => s.logicalId);
+          const up = await exec("rig", ["up", name, "--existing", "--yes", ...(fresh.length ? ["--fresh", ...fresh] : [])], { timeout: 600000, ...ON });
+          if (up.code !== 0) upError = (up.stderr || up.stdout).trim().split("\n").pop() || `exit ${up.code}`;
+          this.opening[name] = "opening";
+          cx.notify();
+        }
+        const all = await nodes();
+        if (!all.length) throw new Error("no seats");
+        // Only seats that are running have a tmux session; the rest are reported, not attached.
+        const seats = all.filter(s => s.sessionStatus === "running");
+        const missing = all.filter(s => s.sessionStatus !== "running").map(s => s.logicalId);
+        if (!seats.length) throw new Error(upError ? `rig up ${name} --existing: ${upError}` : "no seat is running");
         // "tmux attach -t dev-lead@tkt" (plus any socket flags) → exact-match target, outside any tmux.
         const argvOf = (s) => {
           const words = (s.tmuxAttachCommand || `tmux attach -t ${s.canonicalSessionName}`).split(/\s+/);
@@ -526,7 +543,9 @@ export default class Board extends View {
           run("pane.split", { pane: from, direction: i === 1 ? "right" : "down", argv: argvOf(seats[i]) });
           made.push((await until(cx, () => panes().find(p => p.tab === first.tab && !known.has(p.pane)))).pane);
         }
-        this.opening[name] = "added";
+        this.opening[name] = missing.length
+          ? `partial: added ${seats.length}/${all.length} seats; not running: ${missing.join(", ")}${upError ? ` (rig up: ${upError})` : ""}`
+          : "added";
       } catch (e) {
         this.opening[name] = `failed: ${e.message ?? e}`;
       }
@@ -547,7 +566,9 @@ export default class Board extends View {
       const right = sp
         ? btn(`go-${r.name}`, "Go to", false, () => { closeOverlay(p.overlay); run("space.select", { id: sp.id }); })
         : st === "opening" ? div().text_size(11).text_color(t.dim).child("Adding…")
-        : btn(`add-${r.name}`, "Add", true, (_e, cx) => this.addRig(r.name, cx));
+        : st === "starting" ? div().text_size(11).text_color(t.dim).child("Starting team…")
+        : r.status === "running" ? btn(`add-${r.name}`, "Add", true, (_e, cx) => this.addRig(r.name, cx))
+        : btn(`add-${r.name}`, "Start & add", true, (_e, cx) => this.addRig(r.name, cx, false));
       return v_flex().w_full().px(10).py(8).gap(3).rounded(7).bg(t.raised)
         .child(h_flex().gap(8).items_center()
           .child(dot(r.status === "running" ? "#39a380" : C.muted, 7))
@@ -556,7 +577,7 @@ export default class Board extends View {
           .child(div().flex_1())
           .child(div().text_size(10.5).text_color(sp ? C.muted : t.dim).child(sp ? "in Herdr" : "not in Herdr"))
           .child(right))
-        .when(Boolean(st && st !== "opening"), el => el.child(div().text_size(10.5).text_color(st === "added" ? "#39a380" : "#d05252").truncate().child(st === "added" ? "Added to Herdr" : st)));
+        .when(Boolean(st && st !== "opening" && st !== "starting"), el => el.child(div().text_size(10.5).text_color(st === "added" ? "#39a380" : st.startsWith("partial:") ? "#d79032" : "#d05252").truncate().tooltip(st).child(st === "added" ? "Added to Herdr" : st)));
     };
     return v_flex().id("rigs").track_focus(this.handle)
       .on_key_down((e, cx) => { if (e.key === "escape") { closeOverlay(p.overlay); cx.stop_propagation(); } })
