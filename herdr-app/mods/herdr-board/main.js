@@ -87,6 +87,27 @@ const kidStatus = (s) => (s === "error" ? "blocked" : s === "done" ? "idle" : s)
 // Everything the board can show: agents() plus live sub-agents that have no pane.
 // A sub-agent takes its space and tab from the nearest ancestor that is in agents().
 // Each item carries `key`: address plus start time, so a reused address starts at zero.
+// Visible screen (no history: reading history of a busy terminal takes seconds) of each live OpenRig seat view, keyed by seat name (team-lead@culture).
+// A seat whose screen can't be read is left out (the caller falls back to OpenRig's state).
+async function seatScreens() {
+  const out = {};
+  await Promise.all(terminals().filter(k => k.state === "live").map(async k => {
+    const argv = k.argv ?? [], i = argv.indexOf("attach");
+    if (!(argv.includes("tmux") && i >= 0 && argv[i + 1] === "-t" && /^=/.test(argv[i + 2] ?? ""))) return;
+    try {
+      const r = await exec("hc", ["read", k.address.split("/").pop()], { timeout: 5000, ...ON });
+      if (r.code === 0) out[argv[i + 2].slice(1)] = r.stdout;
+    } catch {}
+  }));
+  return out;
+}
+
+function screenWorking(text) {
+  const lines = text.replace(/\[hc\][^\n]*\n?/g, "").trimEnd().split("\n");
+  if (lines.slice(-8).some(l => /esc to interrupt/i.test(l))) return true;
+  return lines.some(l => /awaiting input|completed/.test(l) && /\b([1-9]\d*) working\b/.test(l));
+}
+
 function boardItems() {
   const terms = terminals();
   const byAddr = new Map(terms.map(t => [t.address, t]));
@@ -218,11 +239,17 @@ export default class Board extends View {
         if (r.code === 0) {
           const d = JSON.parse(r.stdout), nodes = Array.isArray(d) ? d : d.entries ?? [];
           const map = {}, before = shared(SEATS) ?? {};
+          // OpenRig reports Claude Code / Codex seats only as "running" or "idle", never "working",
+          // so the seat's own screen decides: both show "esc to interrupt" while a turn runs, and a
+          // lead in Claude Code's background-sessions view shows "… · N working · …".
+          const screens = await seatScreens();
           for (const n of nodes) {
             if (!["claude-code", "codex"].includes(n.runtime)) continue;
-            const a = n.agentActivity?.state, name = n.canonicalSessionName;
-            // "running" is screen output (a redraw included), not a turn: keep the last real state.
-            const st = n.needsAttention ? "blocked" : a === "working" ? "working" : a === "idle" ? "idle" : before[name] ?? null;
+            const a = n.agentActivity?.state, name = n.canonicalSessionName, scr = screens[name];
+            const st = n.needsAttention ? "blocked"
+              : scr != null ? (screenWorking(scr) ? "working" : "idle")
+              // "running" is screen output (a redraw included), not a turn: keep the last real state.
+              : a === "working" ? "working" : a === "idle" ? "idle" : before[name] ?? null;
             if (st) map[name] = st;
           }
           if (JSON.stringify(map) !== JSON.stringify(shared(SEATS) ?? {})) setShared(SEATS, map);
@@ -681,8 +708,12 @@ export default class Board extends View {
     }
     if (role === "pane") {
       const p = panes().find(p => p.pane === props()?.pane);
-      // A renamed pane shows its name; a mod pane its title.
-      const label = p?.name || (p?.terminal ? p?.program?.name : p?.title || p?.mod) || "Terminal";
+      // A renamed pane shows its name; an OpenRig seat view (`tmux attach -t =<seat>`) its program and
+      // seat name ("tmux - team-lead@culture"); a mod pane its title.
+      const argv = p?.terminal ? terminals().find(k => k.address === p.terminal)?.argv ?? [] : [];
+      const at = argv.indexOf("attach");
+      const seat = argv.includes("tmux") && at >= 0 && argv[at + 1] === "-t" && /^=/.test(argv[at + 2] ?? "") ? argv[at + 2].slice(1) : null;
+      const label = p?.name || (seat && `${p?.program?.name || "tmux"} - ${seat}`) || (p?.terminal ? p?.program?.name : p?.title || p?.mod) || "Terminal";
       return h_flex().id(`pane-head-${p?.pane ?? "none"}`).size_full().px(13).items_center().gap(7).bg(C.raised).border_b(1).border_color(C.line)
         .on_click(() => p && run("pane.focus", { pane: p.pane }))
         .child(icon(p?.program, 14)).child(div().min_w(0).truncate().text_size(11).text_color(C.ink).child(label))

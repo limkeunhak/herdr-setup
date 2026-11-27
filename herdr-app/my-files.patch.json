@@ -1,0 +1,33 @@
+{
+  "about": "Applied by the installers to Herdr's own `files` mod after cloning it as my-files: YAML files (.yaml/.yml, up to 4000 lines) are drawn by yaml-view.js with keys, values, strings, numbers, booleans/null, anchors, tags and comments in separate colors (Herdr's built-in YAML grammar colors keys and values alike), with its own mouse selection (drag, double/triple click, Shift+click) and Cmd+C / Cmd+A, and other files get a fuller syntax color map. Each find must occur exactly once.",
+  "edits": [
+    {
+      "find": "import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from \"herdr\";",
+      "replace": "import { YAML_EXT, MAX_LINES, YamlDoc } from \"./yaml-view.js\";\nimport { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from \"herdr\";"
+    },
+    {
+      "find": "const PER_FOLDER",
+      "replace": "// Fuller token colors than the shipped Files panel (which sets only 7), so YAML keys,\n// plain values, booleans and punctuation are colored too.\nconst SYNTAX = t => ({\n  keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3,\n  number: t.ansi1, constant: t.ansi6, boolean: t.ansi1, variable: t.ansi4,\n  property: t.ansi4, \"variable.member\": t.ansi4, attribute: t.ansi3, tag: t.ansi4, label: t.ansi4,\n  operator: t.ansi6, punctuation: t.muted, \"punctuation.special\": t.ansi5, \"string.escape\": t.ansi6,\n  \"string.special\": t.ansi2, embedded: t.foreground,\n});\nconst PER_FOLDER"
+    },
+    {
+      "find": "  init(_props, cx) {\n",
+      "replace": "  init(_props, cx) {\n    this.yamlFocus = cx.focus_handle();\n"
+    },
+    {
+      "find": "    this.code?.release(); this.code = null; this.file = path;",
+      "replace": "    if (cx && !this.yamlFocus) this.yamlFocus = cx.focus_handle();\n    this.code?.release(); this.code = null; this.yaml = null; this.file = path;"
+    },
+    {
+      "find": "        this.code = EditorState.new({",
+      "replace": "        if (YAML_EXT.has(ext.toLowerCase()) && text.length <= 400000 && text.split(\"\\n\").length <= MAX_LINES) {\n          this.yaml = new YamlDoc(text); return;\n        }\n        this.code = EditorState.new({"
+    },
+    {
+      "find": "syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });",
+      "replace": "syntax: SYNTAX(t) });"
+    },
+    {
+      "find": ".when(Boolean(this.file), el => el.child(this.code\n",
+      "replace": ".when(Boolean(this.file), el => el.child(this.yaml\n        ? this.yaml.render(t, settings(), this.yamlFocus)\n        : this.code\n"
+    }
+  ]
+}

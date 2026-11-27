@@ -33,7 +33,7 @@ foreach ($f in @("keys.json", "settings.json", "layouts\herdr-board.json")) {
   $p = Join-Path $HerdrHome $f
   if (Test-Path $p) { Copy-Item $p (Join-Path $backup ($f -replace '\\', '_')) }
 }
-foreach ($m in @("herdr-board", "my-spaces", "tab-notes", "tmux-prefix")) {
+foreach ($m in @("herdr-board", "my-spaces", "my-files", "tab-notes", "tmux-prefix")) {
   $p = Join-Path $HerdrHome "mods\$m"
   if (Test-Path $p) { Copy-Item $p (Join-Path $backup "mods_$m") -Recurse }
 }
@@ -85,6 +85,32 @@ try {
   }
 } catch {
   Write-Warning "my-spaces: $($_.Exception.Message). The layout needs it: open Herdr and run this again."
+}
+
+# my-files: this Herdr's own `files` mod (the Files panel), cloned the same way, plus our
+# yaml-view.js and my-files.patch.json (keys and values of YAML files in separate colors).
+$myFiles = Join-Path $HerdrHome "mods\my-files"
+try {
+  if (Test-Path $myFiles) { Remove-Item $myFiles -Recurse -Force }
+  & herdr-app do mod.clone --name files --as my-files | Out-Null
+  $mainJs = Join-Path $myFiles "main.js"
+  if (-not (Test-Path $mainJs)) { throw "mod.clone didn't create $myFiles (is Herdr open?)" }
+  Copy-Item (Join-Path $src "my-files\yaml-view.js") $myFiles -Force
+  $code = [IO.File]::ReadAllText($mainJs) -replace "`r`n", "`n"
+  $patch = Read-Json (Join-Path $src "my-files.patch.json")
+  $missed = 0
+  foreach ($e in $patch.edits) {
+    $n = [regex]::Matches($code, [regex]::Escape($e.find)).Count
+    if ($n -eq 1) { $code = $code.Replace($e.find, $e.replace) } else { $missed++ }
+  }
+  if ($missed -eq 0) {
+    [IO.File]::WriteAllText($mainJs, $code, (New-Object Text.UTF8Encoding($false)))
+    Write-Host "my-files: cloned from this Herdr's files and patched"
+  } else {
+    Write-Warning "my-files: this Herdr's files mod differs from the one the patch was made for ($missed of $($patch.edits.Count) edits didn't match). Left it unpatched: Files works, without the YAML coloring."
+  }
+} catch {
+  Write-Warning "my-files: $($_.Exception.Message). The layout needs it: open Herdr and run this again."
 }
 
 # 4. settings.json: terminal font D2Coding.
@@ -155,7 +181,7 @@ try {
 
 # 8. Check the mods and show the layout.
 try {
-  foreach ($m in @("herdr-board", "my-spaces", "tab-notes", "tmux-prefix")) { & herdr-app check (Join-Path $HerdrHome "mods\$m") }
+  foreach ($m in @("herdr-board", "my-spaces", "my-files", "tab-notes", "tmux-prefix")) { & herdr-app check (Join-Path $HerdrHome "mods\$m") }
   & herdr-app do layout.switch --name herdr-board | Out-Null
   Write-Host "Switched Herdr to the herdr-board layout."
 } catch {

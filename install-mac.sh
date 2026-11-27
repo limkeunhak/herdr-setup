@@ -5,7 +5,8 @@
 #   bash install-mac.sh --no-switch     # don't check the mods or switch Herdr's layout
 #
 # Copies layout herdr-board and mods herdr-board, tab-notes, tmux-prefix; makes my-spaces from
-# this Herdr's own `spaces` mod plus my-spaces.patch.json; sets the terminal font to D2Coding and
+# this Herdr's own `spaces` mod plus my-spaces.patch.json, and my-files from its `files` mod plus
+# my-files.patch.json and my-files/yaml-view.js (YAML coloring in the Files panel); sets the terminal font to D2Coding and
 # copies its .ttf files into Herdr's fonts/ folder;
 # adds the two Ctrl+B keys and, on macOS, Cmd+Shift+B for the Files panel (never replacing a key
 # already bound to something else).
@@ -25,7 +26,7 @@ while [ $# -gt 0 ]; do
 done
 
 [ -d "$home" ] || { echo "Herdr home not found: $home (start Herdr once, or pass --home)" >&2; exit 1; }
-[ -d "$home/mods/spaces" ] || { echo "$home/mods/spaces is missing: start Herdr once so it installs its mods" >&2; exit 1; }
+[ -d "$home/mods/spaces" ] && [ -d "$home/mods/files" ] || { echo "$home/mods/spaces or files is missing: start Herdr once so it installs its mods" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 is needed" >&2; exit 1; }
 echo "Herdr home: $home"
 
@@ -35,7 +36,7 @@ mkdir -p "$backup"
 for f in keys.json settings.json layouts/herdr-board.json; do
   [ -e "$home/$f" ] && cp "$home/$f" "$backup/$(echo "$f" | tr / _)"
 done
-for m in herdr-board my-spaces tab-notes tmux-prefix; do
+for m in herdr-board my-spaces my-files tab-notes tmux-prefix; do
   [ -d "$home/mods/$m" ] && cp -R "$home/mods/$m" "$backup/mods_$m"
 done
 echo "Backup: $backup"
@@ -51,6 +52,10 @@ echo "Copied layout herdr-board and mods herdr-board, tab-notes, tmux-prefix"
 # my-spaces: a copy of this Herdr's `spaces` (its asset paths renamed, as mod.clone does) plus the patch.
 rm -rf "$home/mods/my-spaces"
 cp -R "$home/mods/spaces" "$home/mods/my-spaces"
+# my-files: the same for this Herdr's `files` (Files panel), plus our own yaml-view.js.
+rm -rf "$home/mods/my-files"
+cp -R "$home/mods/files" "$home/mods/my-files"
+cp "$src/my-files/yaml-view.js" "$home/mods/my-files/"
 
 HOME_DIR="$home" SRC="$src" python3 - <<'PY'
 import json, os
@@ -86,6 +91,25 @@ open(main, "w", encoding="utf-8").write(code)
 mj = os.path.join(home, "mods/my-spaces/mod.json")
 m = load(mj, {})
 m["cloned_from"] = {"name": "spaces"}
+save(mj, m)
+
+# my-files
+main = os.path.join(home, "mods/my-files/main.js")
+code = open(main, encoding="utf-8").read().replace("mods/files/", "mods/my-files/")
+patch = load(os.path.join(src, "my-files.patch.json"), {"edits": []})
+missed = [e for e in patch["edits"] if code.count(e["find"]) != 1]
+if missed:
+    print(f"WARNING my-files: this Herdr's files mod differs from the one the patch was made for "
+          f"({len(missed)} of {len(patch['edits'])} edits didn't match). Left unpatched: Files works, "
+          f"without the YAML coloring.")
+else:
+    for e in patch["edits"]:
+        code = code.replace(e["find"], e["replace"])
+    print("my-files: copied from this Herdr's files and patched")
+open(main, "w", encoding="utf-8").write(code)
+mj = os.path.join(home, "mods/my-files/mod.json")
+m = load(mj, {})
+m["cloned_from"] = {"name": "files"}
 save(mj, m)
 
 # settings.json: terminal font
@@ -138,7 +162,7 @@ else
 fi
 
 if [ "$switch" = 1 ] && command -v herdr-app >/dev/null; then
-  for m in herdr-board my-spaces tab-notes tmux-prefix; do herdr-app check "$home/mods/$m" | head -1; done
+  for m in herdr-board my-spaces my-files tab-notes tmux-prefix; do herdr-app check "$home/mods/$m" | head -1; done
   herdr-app do layout.switch --name herdr-board >/dev/null && echo "Switched Herdr to the herdr-board layout."
 fi
 echo "Done. Backup of anything replaced: $backup"

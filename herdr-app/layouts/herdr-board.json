@@ -206,7 +206,7 @@
                       "id": "side-panel",
                       "type": "block",
                       "content": {
-                        "mod": "files"
+                        "mod": "my-files"
                       },
                       "size": {
                         "px": 340
