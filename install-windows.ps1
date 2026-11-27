@@ -116,7 +116,11 @@ if (-not (Test-Path $keysPath)) {
 # 6. Font check (installing it is up to you).
 $fonts = @((Get-ItemProperty "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts" -ErrorAction SilentlyContinue).PSObject.Properties.Name) +
          @((Get-ItemProperty "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Fonts" -ErrorAction SilentlyContinue).PSObject.Properties.Name)
-if (-not ($fonts -match "D2Coding")) { Write-Warning "D2Coding font isn't installed: get it from https://github.com/naver/d2codingfont/releases and install it." }
+# Herdr also loads .ttf files from its own fonts\ folder at every start, which is enough.
+$herdrFonts = @(Get-ChildItem (Join-Path $HerdrHome "fonts") -Filter "D2Coding*.ttf" -ErrorAction SilentlyContinue)
+if ($herdrFonts.Count -gt 0) { Write-Host "D2Coding: found in $(Join-Path $HerdrHome 'fonts')" }
+elseif ($fonts -match "D2Coding") { Write-Host "D2Coding: installed in Windows" }
+else { Write-Warning "D2Coding font not found: get it from https://github.com/naver/d2codingfont/releases and install it, or put its two .ttf files (D2Coding/ in the zip) into $(Join-Path $HerdrHome 'fonts')." }
 
 # 7. Check the mods and show the layout.
 try {
