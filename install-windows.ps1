@@ -69,7 +69,8 @@ try {
   & herdr-app do mod.clone --name spaces --as my-spaces | Out-Null
   $mainJs = Join-Path $mySpaces "main.js"
   if (-not (Test-Path $mainJs)) { throw "mod.clone didn't create $mySpaces (is Herdr open?)" }
-  $code = [IO.File]::ReadAllText($mainJs)
+  # Herdr on Windows writes the clone with CRLF; the patch's multi-line finds use LF.
+  $code = [IO.File]::ReadAllText($mainJs) -replace "`r`n", "`n"
   $patch = Read-Json (Join-Path $src "my-spaces.patch.json")
   $missed = 0
   foreach ($e in $patch.edits) {
