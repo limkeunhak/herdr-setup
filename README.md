@@ -9,7 +9,7 @@ macOS와 Windows(WSL2) 설치 방법이 따로 있습니다.
 | 기능 | 설명 |
 |---|---|
 | 에이전트 보드 (`herdr-board`) | Needs you / Working / Done / Idle 네 칸에 에이전트를 카드로 보여 줍니다. 하위 에이전트는 부모 카드 밑에 붙고, 카드마다 실제 작업 시간과 Claude Code 토큰 수가 나옵니다. 필터(이 공간만, 핀 고정만), 핀, 숨기기, 종료, 이름 바꾸기, OpenRig 팀원 상태와 팀 추가 창이 있습니다 |
-| Spaces 패널 (`my-spaces`) | Herdr 기본 Spaces 패널에 OpenRig 팀 공간 "rig" 표시와 "Add an OpenRig team" 버튼을 더합니다. 설치할 때 그 컴퓨터의 Herdr에서 복제해 `my-spaces.patch.json`을 적용합니다(Herdr 코드는 이 저장소에 없음) |
+| Spaces 패널 (`my-spaces`) | Herdr 기본 Spaces 패널에 OpenRig 팀 공간 "rig" 표시와 "Add an OpenRig team" 버튼을 더합니다. Spaces 제목 옆 `+`를 누르면 폴더 선택 창이 떠서, 고른 폴더를 작업 디렉토리로 새 공간을 만듭니다(취소하면 아무것도 안 생김). 설치할 때 그 컴퓨터의 Herdr에서 복제해 `my-spaces.patch.json`을 적용합니다(Herdr 코드는 이 저장소에 없음) |
 | 탭 메모 (`tab-notes`) | 탭마다 따로 쓰는 마크다운 메모 패널. 탭을 닫으면 그 메모도 지워집니다 |
 | Ctrl+B 단축키 (`tmux-prefix`) | `Ctrl+B` 다음 `v` 오른쪽 나누기, `s` 아래 나누기, `h j k l` 창 이동, `c` 새 탭, `?` 전체 목록 |
 | 레이아웃 (`herdr-board`) | 왼쪽 사이드바, 위 보드(경계선을 끌어 높이 조절), 아래 터미널, 오른쪽 메모 |
@@ -133,6 +133,8 @@ Herdr 왼쪽 Spaces 제목 옆 겹친 사각형 버튼 → 팀의 **Add**를 누
 - **부모 에이전트에 자동 입력되는 알림:** `hc run`으로 띄운 자식이 멈추거나 끝나면 hc가 부모 에이전트 입력창에 `<hc>t16 is blocked (permission)…` 같은 줄을 입력합니다. 원하지 않으면 `hc run --no-notify`로 띄우거나 `~/.config/herdr-core/config.toml`에 `notes = false`를 넣으세요.
 - **`hc read`는 기본으로 화면만** 보여 줍니다. 지난 출력까지 보려면 `hc read <t> --lines 1000`처럼 줄 수를 주세요.
 - **OpenRig 팀원 상태:** Herdr는 tmux 안 Claude Code가 보내는 신호로 상태를 판단합니다. 그래서 창 크기가 바뀔 때 팀원이 잠깐 working→done으로 깜빡입니다. 보드 카드는 OpenRig 상태를 쓰므로 영향이 없지만, 사이드바의 Done 표시와 "finished" 알림은 그대로 뜰 수 있습니다.
+- **한글 자간:** Herdr가 시스템에 설치된 D2Coding `.ttc`를 시작할 때 못 읽으면 다른 글꼴로 바뀌어 한글 자간이 벌어집니다. `install-mac.sh`는 그래서 D2Coding `.ttf` 두 개를 Herdr 설정 폴더의 `fonts/`에도 복사합니다(Herdr가 시작할 때마다 읽는 곳). Windows에서 같은 증상이 나오면 릴리스 zip의 `D2Coding/` 안 `.ttf` 두 개를 Herdr 설정 폴더(보통 `%USERPROFILE%\.config\herdr-app`)의 `fonts\`에 넣으세요.
+- **Spaces `+`와 WSL:** Windows에서는 폴더 선택 창이 Windows 것이라 `+`로 만든 공간이 WSL이 아니라 Windows에 생깁니다. WSL 안에 만들려면 컴퓨터 목록의 `wsl` 옆 버튼을 쓰세요.
 - **OpenRig 레이아웃과 글꼴:** OpenRig의 `rig terminal open`이 만드는 `rig` 레이아웃에는 글꼴 설정이 없을 수 있습니다. 한글 자간이 벌어지면 그 레이아웃 파일 맨 위에 `"font": "D2Coding"`을 넣으세요.
 - **되돌리기:** Herdr에서 `Ctrl+Shift+L`로 다른 레이아웃을 고르면 됩니다. 설치 전 상태는 백업 폴더에 있습니다.
 

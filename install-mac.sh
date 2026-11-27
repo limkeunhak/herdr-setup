@@ -5,7 +5,8 @@
 #   bash install-mac.sh --no-switch     # don't check the mods or switch Herdr's layout
 #
 # Copies layout herdr-board and mods herdr-board, tab-notes, tmux-prefix; makes my-spaces from
-# this Herdr's own `spaces` mod plus my-spaces.patch.json; sets the terminal font to D2Coding;
+# this Herdr's own `spaces` mod plus my-spaces.patch.json; sets the terminal font to D2Coding and
+# copies its .ttf files into Herdr's fonts/ folder;
 # adds the two Ctrl+B keys (never replacing a key already bound to something else).
 # Everything it replaces is backed up first. Start Herdr once before this, so its home exists.
 set -euo pipefail
@@ -112,6 +113,24 @@ PY
 
 if ! ls "$HOME/Library/Fonts" /Library/Fonts 2>/dev/null | grep -qi d2coding; then
   echo "WARNING D2Coding isn't installed: brew install --cask font-d2coding"
+fi
+
+# Herdr's own fonts/ folder: Herdr can fail to load the system's D2Coding .ttc at startup and fall
+# back to a font with wide Korean spacing. Separate .ttf files in fonts/ load every time.
+ttf=""
+for d in "$(brew --prefix 2>/dev/null || echo /opt/homebrew)"/Caskroom/font-d2coding/*/D2Coding "$HOME/Library/Fonts" /Library/Fonts; do
+  r=$(ls "$d"/D2Coding-Ver*.ttf 2>/dev/null | grep -v -i ligature | tail -1 || true)
+  b=$(ls "$d"/D2CodingBold-Ver*.ttf 2>/dev/null | grep -v -i ligature | tail -1 || true)
+  if [ -n "$r" ] && [ -n "$b" ]; then ttf="$r|$b"; break; fi
+done
+if [ -n "$ttf" ]; then
+  mkdir -p "$home/fonts"
+  for f in D2Coding.ttf D2CodingBold.ttf; do [ -e "$home/fonts/$f" ] && cp "$home/fonts/$f" "$backup/fonts_$f"; done
+  cp "${ttf%%|*}" "$home/fonts/D2Coding.ttf"
+  cp "${ttf##*|}" "$home/fonts/D2CodingBold.ttf"
+  echo "Copied D2Coding.ttf and D2CodingBold.ttf into $home/fonts"
+else
+  echo "WARNING D2Coding .ttf files not found (brew install --cask font-d2coding); Korean spacing may be wide"
 fi
 
 if [ "$switch" = 1 ] && command -v herdr-app >/dev/null; then
